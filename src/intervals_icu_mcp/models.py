@@ -17,10 +17,10 @@ class SportSettings(BaseModel):
     """Sport-specific settings for an athlete."""
 
     id: int
-    type: str | None = None
+    types: list[str] = Field(default_factory=list)
     ftp: int | None = None
-    fthr: int | None = None
-    pace_threshold: float | None = None
+    lthr: int | None = None
+    threshold_pace: float | None = None
     swim_threshold: float | None = None
 
 
@@ -319,7 +319,7 @@ class FitnessSummary(BaseModel):
 class Interval(BaseModel):
     """Activity interval data."""
 
-    id: int | None = None
+    id: int | str | None = None
     type: str | None = None  # e.g., "WORK", "REST", "WARM_UP", "COOL_DOWN"
     start: int | None = None  # Start time in seconds
     end: int | None = None  # End time in seconds
@@ -336,23 +336,34 @@ class Interval(BaseModel):
     target_max: float | None = None
 
 
+class IntervalsDTO(BaseModel):
+    """API response wrapper for activity intervals."""
+
+    id: str | None = None
+    analyzed: datetime | None = None
+    icu_intervals: list[Interval] = Field(default_factory=list[Interval])
+    icu_groups: list[Any] = Field(default_factory=list)
+
+
 # ==================== Activity Streams Models ====================
 
 
-class ActivityStreams(BaseModel):
-    """Time-series data streams for an activity."""
+class ActivityStreamItem(BaseModel):
+    """A single named data stream for an activity."""
 
-    watts: list[int | None] | None = None
-    heartrate: list[int | None] | None = None
-    cadence: list[int | None] | None = None
-    velocity_smooth: list[float | None] | None = None
-    altitude: list[float | None] | None = None
-    distance: list[float | None] | None = None
-    time: list[int | None] | None = None
-    latlng: list[list[float] | None] | None = None
-    temp: list[int | None] | None = None
-    moving: list[bool | None] | None = None
-    grade_smooth: list[float | None] | None = None
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: str | None = None
+    name: str | None = None
+    data: list[Any] | None = None
+    data2: list[Any] | None = None
+    value_type_is_array: bool | None = Field(None, alias="valueTypeIsArray")
+    anomalies: list[Any] | None = None
+    custom: bool | None = None
+
+
+# Keep alias for backwards compat
+ActivityStreams = ActivityStreamItem
 
 
 # ==================== Best Efforts Models ====================
@@ -400,7 +411,7 @@ class Gear(BaseModel):
     name: str | None = None
     brand: str | None = None
     model: str | None = None
-    gear_type: str | None = Field(None, alias="gear_type")  # e.g., "BIKE", "SHOE"
+    gear_type: str | None = Field(None, alias="type")  # e.g., "BIKE", "SHOE"
     active: bool | None = None
     primary: bool | None = None
     distance: float | None = None  # Total distance in meters

@@ -1,5 +1,6 @@
 """Async HTTP client for Intervals.icu API."""
 
+import json
 from typing import Any
 
 import httpx
@@ -9,7 +10,7 @@ from .auth import ICUConfig
 from .models import (
     Activity,
     ActivitySearchResult,
-    ActivityStreams,
+    ActivityStreamItem,
     ActivitySummary,
     Athlete,
     BestEffort,
@@ -20,6 +21,7 @@ from .models import (
     Histogram,
     HRCurve,
     Interval,
+    IntervalsDTO,
     PaceCurve,
     PowerCurve,
     SportSettings,
@@ -260,7 +262,7 @@ class ICUClient:
             List of Activity objects around the reference activity
         """
         athlete_id = athlete_id or self.config.intervals_icu_athlete_id
-        params = {"id": activity_id, "count": count}
+        params = {"activity_id": activity_id, "limit": count}
 
         response = await self._request(
             "GET", f"/athlete/{athlete_id}/activities-around", params=params
@@ -358,7 +360,7 @@ class ICUClient:
             Histogram with power distribution bins
         """
         response = await self._request("GET", f"/activity/{activity_id}/power-histogram")
-        return Histogram(**response.json())
+        return Histogram(bins=response.json())
 
     async def get_hr_histogram(
         self,
@@ -373,7 +375,7 @@ class ICUClient:
             Histogram with HR distribution bins
         """
         response = await self._request("GET", f"/activity/{activity_id}/hr-histogram")
-        return Histogram(**response.json())
+        return Histogram(bins=response.json())
 
     async def get_pace_histogram(
         self,
@@ -388,7 +390,7 @@ class ICUClient:
             Histogram with pace distribution bins
         """
         response = await self._request("GET", f"/activity/{activity_id}/pace-histogram")
-        return Histogram(**response.json())
+        return Histogram(bins=response.json())
 
     async def get_gap_histogram(
         self,
@@ -403,7 +405,7 @@ class ICUClient:
             Histogram with GAP distribution bins
         """
         response = await self._request("GET", f"/activity/{activity_id}/gap-histogram")
-        return Histogram(**response.json())
+        return Histogram(bins=response.json())
 
     # ==================== Wellness Endpoints ====================
 
@@ -569,6 +571,7 @@ class ICUClient:
         athlete_id: str | None = None,
         oldest: str | None = None,
         newest: str | None = None,
+        activity_type: str = "Ride",
     ) -> PowerCurve:
         """Get power curve data (best efforts for various durations).
 
@@ -576,19 +579,26 @@ class ICUClient:
             athlete_id: Athlete ID (uses config default if not provided)
             oldest: Oldest date to include (ISO-8601 format)
             newest: Newest date to include (ISO-8601 format)
+            activity_type: Activity type to filter by (default "Ride")
 
         Returns:
             PowerCurve with best efforts data
         """
         athlete_id = athlete_id or self.config.intervals_icu_athlete_id
-        params = {}
+        type_filter = json.dumps([activity_type])
+        params: dict[str, Any] = {
+            "type": activity_type,
+            "f1": type_filter,
+        }
 
         if oldest:
             params["oldest"] = oldest
         if newest:
             params["newest"] = newest
 
-        response = await self._request("GET", f"/athlete/{athlete_id}/power-curves", params=params)
+        response = await self._request(
+            "GET", f"/athlete/{athlete_id}/power-curves.json", params=params
+        )
         return PowerCurve(**response.json())
 
     async def get_hr_curves(
@@ -683,14 +693,22 @@ class ICUClient:
             List of Interval objects
         """
         response = await self._request("GET", f"/activity/{activity_id}/intervals")
-        adapter = TypeAdapter(list[Interval])
-        return adapter.validate_python(response.json())
+        json_data = response.json()
+
+        # Handle if API returns list directly instead of IntervalsDTO
+        if isinstance(json_data, list):
+            adapter = TypeAdapter(list[Interval])
+            return adapter.validate_python(json_data)
+
+        # Otherwise parse as IntervalsDTO
+        dto = IntervalsDTO(**json_data)
+        return dto.icu_intervals
 
     async def get_activity_streams(
         self,
         activity_id: str,
         streams: list[str] | None = None,
-    ) -> ActivityStreams:
+    ) -> list[ActivityStreamItem]:
         """Get time-series data streams for an activity.
 
         Args:
@@ -699,28 +717,32 @@ class ICUClient:
                     If None, fetches all available streams
 
         Returns:
-            ActivityStreams object with time-series data
+            List of ActivityStreamItem objects with time-series data
         """
         params = {}
         if streams:
             params["types"] = ",".join(streams)
 
         response = await self._request("GET", f"/activity/{activity_id}/streams", params=params)
-        return ActivityStreams(**response.json())
+        return [ActivityStreamItem(**item) for item in response.json()]
 
     async def get_best_efforts(
         self,
         activity_id: str,
+        stream: str = "watts",
     ) -> list[BestEffort]:
         """Get best efforts for an activity.
 
         Args:
             activity_id: Activity ID
+            stream: Stream to analyze (default "watts")
 
         Returns:
             List of BestEffort objects
         """
-        response = await self._request("GET", f"/activity/{activity_id}/best-efforts")
+        response = await self._request(
+            "GET", f"/activity/{activity_id}/best-efforts", params={"stream": stream}
+        )
         adapter = TypeAdapter(list[BestEffort])
         return adapter.validate_python(response.json())
 
@@ -730,6 +752,8 @@ class ICUClient:
         interval_type: str | None = None,
         min_duration: int | None = None,
         max_duration: int | None = None,
+        min_intensity: int = 0,
+        max_intensity: int = 100,
         limit: int = 30,
     ) -> list[dict[str, Any]]:
         """Search for intervals across activities.
@@ -739,20 +763,23 @@ class ICUClient:
             interval_type: Type of interval to search for
             min_duration: Minimum duration in seconds
             max_duration: Maximum duration in seconds
+            min_intensity: Minimum intensity (0-100, default 0)
+            max_intensity: Maximum intensity (0-100, default 100)
             limit: Maximum number of results to return
 
         Returns:
             List of matching intervals with activity context
         """
         athlete_id = athlete_id or self.config.intervals_icu_athlete_id
-        params = {}
+        params: dict[str, Any] = {
+            "minSecs": min_duration or 0,
+            "maxSecs": max_duration or 3600,
+            "minIntensity": min_intensity,
+            "maxIntensity": max_intensity,
+        }
 
         if interval_type:
             params["type"] = interval_type
-        if min_duration:
-            params["minDuration"] = min_duration
-        if max_duration:
-            params["maxDuration"] = max_duration
 
         response = await self._request(
             "GET", f"/athlete/{athlete_id}/activities/interval-search", params=params
