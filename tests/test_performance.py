@@ -83,13 +83,13 @@ class TestGetPowerCurves:
         assert "metadata" in response
         assert "No power curve data" in response["metadata"]["message"]
 
-    async def test_get_power_curves_includes_f1_parameter(
+    async def test_get_power_curves_includes_type_parameter(
         self,
         mock_config,
         respx_mock,
         mock_power_curve_data,
     ):
-        """Test that f1 filter parameter is included in request."""
+        """Test that type filter parameter is included in request."""
         mock_ctx = MagicMock()
         mock_ctx.get_state.return_value = mock_config
 
@@ -101,7 +101,7 @@ class TestGetPowerCurves:
 
         assert route.call_count == 1
         request = route.calls[0].request
-        assert "f1=" in str(request.url)
+        assert "type=VirtualRide" in str(request.url)
 
     async def test_get_power_curves_with_date_range(
         self,

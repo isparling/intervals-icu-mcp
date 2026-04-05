@@ -1,6 +1,5 @@
 """Async HTTP client for Intervals.icu API."""
 
-import json
 from typing import Any
 
 import httpx
@@ -585,10 +584,8 @@ class ICUClient:
             PowerCurve with best efforts data
         """
         athlete_id = athlete_id or self.config.intervals_icu_athlete_id
-        type_filter = json.dumps([activity_type])
         params: dict[str, Any] = {
             "type": activity_type,
-            "f1": type_filter,
         }
 
         if oldest:
