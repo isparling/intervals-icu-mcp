@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 # Type aliases for common enums
 ActivityType = Literal["Ride", "Run", "Swim", "Walk", "Hike", "VirtualRide", "VirtualRun", "Other"]
@@ -235,6 +235,19 @@ class Folder(BaseModel):
 # ==================== Power Curve Models ====================
 
 
+class DataCurve(BaseModel):
+    """A single power curve (e.g., 1 year, 42 days)."""
+
+    id: str | None = None
+    label: str | None = None
+    start_date_local: str | None = None
+    end_date_local: str | None = None
+    days: int | None = None
+    secs: list[int] = Field(default_factory=list[int])
+    values: list[int] = Field(default_factory=list[int])
+    activity_id: list[str] = Field(default_factory=list[str])
+
+
 class DataCurvePt(BaseModel):
     """Single point on a power/HR/pace curve."""
 
@@ -252,7 +265,32 @@ class PowerCurve(BaseModel):
     name: str | None = None
     type: str | None = None
     athlete_id: str | None = None
-    data: list[DataCurvePt] = Field(default_factory=list[DataCurvePt])
+
+    # API returns "list" as array of DataCurve objects
+    curves: list[DataCurve] = Field(default_factory=list[DataCurve], alias="list")
+    label: str | None = None
+
+    @computed_field
+    @property
+    def points(self) -> list[DataCurvePt]:
+        # Extract from DataCurve objects
+        if self.curves:
+            all_pts: list[DataCurvePt] = []
+            for curve in self.curves:
+                if curve.secs and curve.values:
+                    pts: list[DataCurvePt] = [
+                        DataCurvePt(
+                            secs=curve.secs[i],
+                            watts=curve.values[i] if i < len(curve.values) else None,
+                            src_activity_id=curve.activity_id[i]
+                            if curve.activity_id and i < len(curve.activity_id)
+                            else None,
+                        )
+                        for i in range(len(curve.secs))
+                    ]
+                    all_pts.extend(pts)
+            return all_pts
+        return []
 
 
 class HRCurve(BaseModel):

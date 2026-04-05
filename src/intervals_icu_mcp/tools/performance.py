@@ -16,6 +16,10 @@ async def get_power_curves(
         str | None,
         "Time period shorthand: 'week', 'month', 'year', 'all' (optional)",
     ] = None,
+    activity_type: Annotated[
+        str,
+        "Activity type to filter by (e.g., 'Ride', 'Run', 'VirtualRide'). Default 'Ride'.",
+    ] = "Ride",
     ctx: Context | None = None,
 ) -> str:
     """Get power curve data showing best efforts for various durations.
@@ -71,9 +75,10 @@ async def get_power_curves(
             period_label = "90_days"
 
         async with ICUClient(config) as client:
-            power_curve = await client.get_power_curves(oldest=oldest)
+            power_curve = await client.get_power_curves(oldest=oldest, activity_type=activity_type)
 
-            if not power_curve.data or len(power_curve.data) == 0:
+            points = power_curve.points
+            if not points or len(points) == 0:
                 return ResponseBuilder.build_response(
                     data={"power_curve": [], "period": period_label},
                     metadata={
@@ -100,7 +105,7 @@ async def get_power_curves(
             for seconds, label in key_durations.items():
                 # Find closest data point
                 closest_point = min(
-                    power_curve.data,
+                    points,
                     key=lambda p: abs(p.secs - seconds),
                     default=None,
                 )
@@ -119,12 +124,12 @@ async def get_power_curves(
                     peak_efforts[label] = effort
 
             # Calculate summary statistics
-            max_power_point = max(power_curve.data, key=lambda p: p.watts or 0)
-            min_duration = min(power_curve.data, key=lambda p: p.secs)
-            max_duration = max(power_curve.data, key=lambda p: p.secs)
+            max_power_point = max(points, key=lambda p: p.watts or 0)
+            min_duration = min(points, key=lambda p: p.secs)
+            max_duration = max(points, key=lambda p: p.secs)
 
             summary: dict[str, Any] = {
-                "total_data_points": len(power_curve.data),
+                "total_data_points": len(points),
                 "max_power_watts": max_power_point.watts,
                 "max_power_duration_seconds": max_power_point.secs,
                 "duration_range": {
@@ -134,13 +139,13 @@ async def get_power_curves(
             }
 
             # If we have dates, show range
-            dates = [p.date for p in power_curve.data if p.date]
+            dates = [p.date for p in points if p.date]
             if dates:
                 summary["effort_date_range"] = {"oldest": min(dates), "newest": max(dates)}
 
             # Calculate FTP and power zones (based on 20-min power)
             twenty_min_point = min(
-                power_curve.data,
+                points,
                 key=lambda p: abs(p.secs - 1200),
                 default=None,
             )

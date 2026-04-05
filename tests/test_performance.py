@@ -15,13 +15,14 @@ def mock_power_curve_data():
         "name": "Power Curve",
         "type": "power",
         "athlete_id": "i123456",
-        "data": [
-            {"secs": 5, "watts": 800, "date": "2025-10-01", "src_activity_id": "a1"},
-            {"secs": 15, "watts": 650, "date": "2025-10-03", "src_activity_id": "a2"},
-            {"secs": 60, "watts": 400, "date": "2025-10-05", "src_activity_id": "a3"},
-            {"secs": 300, "watts": 300, "date": "2025-10-08", "src_activity_id": "a4"},
-            {"secs": 1200, "watts": 250, "date": "2025-10-12", "src_activity_id": "a5"},
-            {"secs": 3600, "watts": 200, "date": "2025-10-15", "src_activity_id": "a6"},
+        "list": [
+            {
+                "id": "90d",
+                "label": "90 days",
+                "secs": [5, 15, 60, 300, 1200, 3600],
+                "values": [800, 650, 400, 300, 250, 200],
+                "activity_id": ["a1", "a2", "a3", "a4", "a5", "a6"],
+            }
         ],
     }
 
@@ -32,7 +33,7 @@ def mock_empty_power_curve_data():
         "name": "Power Curve",
         "type": "power",
         "athlete_id": "i123456",
-        "data": [],
+        "list": [],
     }
 
 
