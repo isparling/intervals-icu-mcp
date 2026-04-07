@@ -169,17 +169,17 @@ async def athlete_profile_resource() -> str:
 
             # Add sport settings if available
             if athlete.sport_settings:
-                sport_data: list[dict[str, str | int | float | None]] = []
+                sport_data: list[dict[str, str | int | float | list[str] | None]] = []
                 for sport in athlete.sport_settings:
-                    sport_info: dict[str, str | int | float | None] = {
-                        "type": sport.type,
+                    sport_info: dict[str, str | int | float | list[str] | None] = {
+                        "type": sport.types[0] if sport.types else None,
                     }
                     if sport.ftp:
                         sport_info["ftp"] = sport.ftp
-                    if sport.fthr:
-                        sport_info["fthr"] = sport.fthr
-                    if sport.pace_threshold:
-                        sport_info["threshold_pace"] = sport.pace_threshold
+                    if sport.lthr:
+                        sport_info["fthr"] = sport.lthr
+                    if sport.threshold_pace:
+                        sport_info["threshold_pace"] = sport.threshold_pace
                     sport_data.append(sport_info)
                 data["sports"] = sport_data
 

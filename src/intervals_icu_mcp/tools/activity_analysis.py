@@ -1,6 +1,6 @@
 """Activity analysis tools for Intervals.icu MCP server."""
 
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 
 from fastmcp import Context
 
@@ -48,43 +48,25 @@ async def get_activity_streams(
 
     try:
         async with ICUClient(config) as client:
-            streams_data = await client.get_activity_streams(activity_id, streams)
+            stream_items = await client.get_activity_streams(activity_id, streams)
 
-            # Count available streams
-            available_streams: list[str] = []
-            stream_lengths: dict[str, int] = {}
-
-            for stream_name in [
-                "watts",
-                "heartrate",
-                "cadence",
-                "velocity_smooth",
-                "altitude",
-                "distance",
-                "time",
-                "latlng",
-                "temp",
-                "moving",
-                "grade_smooth",
-            ]:
-                stream_value: Any = getattr(streams_data, stream_name, None)
-                if stream_value is not None:
-                    available_streams.append(stream_name)
-                    if isinstance(stream_value, list):
-                        stream_lengths[stream_name] = len(cast(list[Any], stream_value))
-
-            if not available_streams:
+            if not stream_items:
                 return ResponseBuilder.build_response(
                     data={"streams": {}, "available_streams": []},
                     metadata={"message": "No stream data available for this activity"},
                 )
 
-            # Build response
+            # Convert list of stream items into a dict keyed by stream type
+            available_streams: list[str] = []
+            stream_lengths: dict[str, int] = {}
             streams_dict: dict[str, Any] = {}
-            for stream_name in available_streams:
-                stream_value = getattr(streams_data, stream_name)
-                if stream_value is not None:
-                    streams_dict[stream_name] = stream_value
+
+            for item in stream_items:
+                stream_type = item.type
+                if stream_type and item.data is not None:
+                    available_streams.append(stream_type)
+                    streams_dict[stream_type] = item.data
+                    stream_lengths[stream_type] = len(item.data)
 
             result_data = {
                 "activity_id": activity_id,

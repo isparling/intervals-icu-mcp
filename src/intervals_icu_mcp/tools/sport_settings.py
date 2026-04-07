@@ -37,7 +37,8 @@ async def get_sport_settings(
             for settings in settings_list:
                 sport_info: dict[str, Any] = {
                     "id": settings.id,
-                    "type": settings.type,
+                    "type": settings.types[0] if settings.types else None,
+                    "types": settings.types,
                 }
 
                 # Power settings (cycling)
@@ -45,13 +46,13 @@ async def get_sport_settings(
                     sport_info["ftp_watts"] = settings.ftp
 
                 # Heart rate settings
-                if settings.fthr is not None:
-                    sport_info["fthr_bpm"] = settings.fthr
+                if settings.lthr is not None:
+                    sport_info["fthr_bpm"] = settings.lthr
 
                 # Pace settings (running/swimming)
-                if settings.pace_threshold is not None:
+                if settings.threshold_pace is not None:
                     # Convert to min:sec per km
-                    pace_secs = settings.pace_threshold * 60
+                    pace_secs = settings.threshold_pace * 60
                     minutes = int(pace_secs // 60)
                     seconds = int(pace_secs % 60)
                     sport_info["pace_threshold"] = f"{minutes}:{seconds:02d} /km"
@@ -113,9 +114,9 @@ async def update_sport_settings(
             if ftp is not None:
                 settings_data["ftp"] = ftp
             if fthr is not None:
-                settings_data["fthr"] = fthr
+                settings_data["lthr"] = fthr
             if pace_threshold is not None:
-                settings_data["pace_threshold"] = pace_threshold
+                settings_data["threshold_pace"] = pace_threshold
             if swim_threshold is not None:
                 settings_data["swim_threshold"] = swim_threshold
 
@@ -128,15 +129,15 @@ async def update_sport_settings(
 
             result: dict[str, Any] = {
                 "id": settings.id,
-                "type": settings.type,
+                "type": settings.types[0] if settings.types else None,
             }
 
             if settings.ftp is not None:
                 result["ftp_watts"] = settings.ftp
-            if settings.fthr is not None:
-                result["fthr_bpm"] = settings.fthr
-            if settings.pace_threshold is not None:
-                pace_secs = settings.pace_threshold * 60
+            if settings.lthr is not None:
+                result["fthr_bpm"] = settings.lthr
+            if settings.threshold_pace is not None:
+                pace_secs = settings.threshold_pace * 60
                 minutes = int(pace_secs // 60)
                 seconds = int(pace_secs % 60)
                 result["pace_threshold"] = f"{minutes}:{seconds:02d} /km"
@@ -240,9 +241,9 @@ async def create_sport_settings(
             if ftp is not None:
                 settings_data["ftp"] = ftp
             if fthr is not None:
-                settings_data["fthr"] = fthr
+                settings_data["lthr"] = fthr
             if pace_threshold is not None:
-                settings_data["pace_threshold"] = pace_threshold
+                settings_data["threshold_pace"] = pace_threshold
             if swim_threshold is not None:
                 settings_data["swim_threshold"] = swim_threshold
 
@@ -250,15 +251,15 @@ async def create_sport_settings(
 
             result: dict[str, Any] = {
                 "id": settings.id,
-                "type": settings.type,
+                "type": settings.types[0] if settings.types else None,
             }
 
             if settings.ftp is not None:
                 result["ftp_watts"] = settings.ftp
-            if settings.fthr is not None:
-                result["fthr_bpm"] = settings.fthr
-            if settings.pace_threshold is not None:
-                pace_secs = settings.pace_threshold * 60
+            if settings.lthr is not None:
+                result["fthr_bpm"] = settings.lthr
+            if settings.threshold_pace is not None:
+                pace_secs = settings.threshold_pace * 60
                 minutes = int(pace_secs // 60)
                 seconds = int(pace_secs % 60)
                 result["pace_threshold"] = f"{minutes}:{seconds:02d} /km"

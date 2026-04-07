@@ -1,5 +1,7 @@
 """Tests for athlete tools."""
 
+import json
+from datetime import date
 from unittest.mock import MagicMock
 
 from httpx import Response
@@ -15,19 +17,20 @@ class TestGetAthleteProfile:
         mock_config,
         respx_mock,
         mock_athlete_data,
+        mock_wellness_data,
     ):
         """Test successful athlete profile retrieval."""
         # Create mock context with config
         mock_ctx = MagicMock()
         mock_ctx.get_state.return_value = mock_config
 
-        # Mock the API endpoint
+        today = date.today().isoformat()
         respx_mock.get("/athlete/i123456").mock(return_value=Response(200, json=mock_athlete_data))
+        respx_mock.get(f"/athlete/i123456/wellness/{today}").mock(
+            return_value=Response(200, json=mock_wellness_data)
+        )
 
         result = await get_athlete_profile(ctx=mock_ctx)
-
-        # Check for JSON response with expected fields
-        import json
 
         response = json.loads(result)
         assert "data" in response
@@ -46,19 +49,19 @@ class TestGetFitnessSummary:
         mock_config,
         respx_mock,
         mock_athlete_data,
+        mock_wellness_data,
     ):
         """Test successful fitness summary retrieval."""
-        # Create mock context with config
         mock_ctx = MagicMock()
         mock_ctx.get_state.return_value = mock_config
 
-        # Mock the API endpoint
+        today = date.today().isoformat()
         respx_mock.get("/athlete/i123456").mock(return_value=Response(200, json=mock_athlete_data))
+        respx_mock.get(f"/athlete/i123456/wellness/{today}").mock(
+            return_value=Response(200, json=mock_wellness_data)
+        )
 
         result = await get_fitness_summary(ctx=mock_ctx)
-
-        # Check for JSON response with expected fields
-        import json
 
         response = json.loads(result)
         assert "data" in response
@@ -70,22 +73,22 @@ class TestGetFitnessSummary:
         mock_config,
         respx_mock,
         mock_athlete_data,
+        mock_wellness_data,
     ):
         """Test fitness summary with high ramp rate warning."""
-        # Create mock context with config
         mock_ctx = MagicMock()
         mock_ctx.get_state.return_value = mock_config
 
-        # Modify athlete data to have high ramp rate
-        athlete_data = mock_athlete_data.copy()
-        athlete_data["ramp_rate"] = 10.0
+        wellness_data = mock_wellness_data.copy()
+        wellness_data["rampRate"] = 10.0
 
-        respx_mock.get("/athlete/i123456").mock(return_value=Response(200, json=athlete_data))
+        today = date.today().isoformat()
+        respx_mock.get("/athlete/i123456").mock(return_value=Response(200, json=mock_athlete_data))
+        respx_mock.get(f"/athlete/i123456/wellness/{today}").mock(
+            return_value=Response(200, json=wellness_data)
+        )
 
         result = await get_fitness_summary(ctx=mock_ctx)
-
-        # Check for JSON response with ramp rate analysis
-        import json
 
         response = json.loads(result)
         assert "analysis" in response

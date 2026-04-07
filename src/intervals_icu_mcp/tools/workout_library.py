@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from fastmcp import Context
 
 from ..auth import ICUConfig
-from ..client import ICUAPIError, ICUClient
+from ..client import ICUAPIError, ICUClient  # noqa: F401
 from ..response_builder import ResponseBuilder
 
 
@@ -107,82 +107,11 @@ async def get_workouts_in_folder(
         JSON string with workout details
     """
     assert ctx is not None
-    config: ICUConfig = ctx.get_state("config")
+    _ = ctx  # config not needed - this endpoint is not supported
 
-    try:
-        async with ICUClient(config) as client:
-            workouts = await client.get_workouts_in_folder(folder_id)
-
-            if not workouts:
-                return ResponseBuilder.build_response(
-                    data={"workouts": [], "count": 0, "folder_id": folder_id},
-                    metadata={"message": f"No workouts found in folder {folder_id}"},
-                )
-
-            workouts_data: list[dict[str, Any]] = []
-            for workout in workouts:
-                workout_item: dict[str, Any] = {
-                    "id": workout.id,
-                    "name": workout.name,
-                }
-
-                if workout.description:
-                    workout_item["description"] = workout.description
-                if workout.type:
-                    workout_item["type"] = workout.type
-
-                # Workout metrics
-                metrics: dict[str, Any] = {}
-                if workout.moving_time:
-                    metrics["duration_seconds"] = workout.moving_time
-                if workout.distance:
-                    metrics["distance_meters"] = workout.distance
-                if workout.icu_training_load:
-                    metrics["training_load"] = workout.icu_training_load
-                if workout.icu_intensity:
-                    metrics["intensity_factor"] = workout.icu_intensity
-                if workout.joules:
-                    metrics["joules"] = workout.joules
-                if workout.joules_above_ftp:
-                    metrics["joules_above_ftp"] = workout.joules_above_ftp
-
-                if metrics:
-                    workout_item["metrics"] = metrics
-
-                # Other properties
-                if workout.indoor is not None:
-                    workout_item["indoor"] = workout.indoor
-                if workout.color:
-                    workout_item["color"] = workout.color
-
-                workouts_data.append(workout_item)
-
-            # Calculate summary
-            total_duration = sum(w.moving_time or 0 for w in workouts)
-            total_load = sum(w.icu_training_load or 0 for w in workouts)
-            indoor_count = sum(1 for w in workouts if w.indoor)
-
-            summary = {
-                "total_workouts": len(workouts),
-                "total_duration_seconds": total_duration,
-                "total_training_load": total_load,
-                "indoor_workouts": indoor_count,
-            }
-
-            result_data = {
-                "folder_id": folder_id,
-                "workouts": workouts_data,
-                "summary": summary,
-            }
-
-            return ResponseBuilder.build_response(
-                data=result_data,
-                query_type="folder_workouts",
-            )
-
-    except ICUAPIError as e:
-        return ResponseBuilder.build_error_response(e.message, error_type="api_error")
-    except Exception as e:
-        return ResponseBuilder.build_error_response(
-            f"Unexpected error: {str(e)}", error_type="internal_error"
-        )
+    return ResponseBuilder.build_error_response(
+        "The Intervals.icu API does not support listing individual workouts within a folder "
+        "via the GET endpoint. Use get_workout_library to see folder details including "
+        "workout counts, or access workouts through the Intervals.icu web interface.",
+        error_type="not_supported",
+    )

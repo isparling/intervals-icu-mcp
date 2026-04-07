@@ -216,3 +216,8 @@ async def tool_name(
 - `uv.lock` - Locked dependencies (commit this)
 - `.github/workflows/test.yml` - CI tests
 - `.github/workflows/release.yml` - Docker release automation
+
+
+## workflow
+
+- When I report a bug, **do not** immediately try to fix the bug. First, write a test that reproduces the bug, and then spawn subagents to fix the bug as reported and prove it with a passing test.
