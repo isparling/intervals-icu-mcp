@@ -11,7 +11,9 @@ from ..response_builder import ResponseBuilder
 
 
 async def get_wellness_data(
-    days_back: Annotated[int, "Number of days to look back"] = 7,
+    days_back: Annotated[int | str | None, "Number of days to look back (default 7)"] = 7,
+    start_date: Annotated[str | None, "Start date in YYYY-MM-DD format"] = None,
+    end_date: Annotated[str | None, "End date in YYYY-MM-DD format"] = None,
     ctx: Context | None = None,
 ) -> str:
     """Get wellness data for recent days.
@@ -20,7 +22,9 @@ async def get_wellness_data(
     mood, fatigue, soreness, and other health markers.
 
     Args:
-        days_back: Number of days to retrieve (default 7)
+        days_back: Number of days to retrieve (default 7). Ignored if start_date/end_date provided.
+        start_date: Start date in YYYY-MM-DD format (optional)
+        end_date: End date in YYYY-MM-DD format (optional)
 
     Returns:
         JSON string with wellness data
@@ -29,10 +33,15 @@ async def get_wellness_data(
     config: ICUConfig = ctx.get_state("config")
 
     try:
-        # Calculate date range
-        oldest_date = datetime.now() - timedelta(days=days_back)
-        oldest = oldest_date.strftime("%Y-%m-%d")
-        newest = datetime.now().strftime("%Y-%m-%d")
+        # Handle date range or days_back
+        if start_date and end_date:
+            oldest = start_date
+            newest = end_date
+        else:
+            days = int(days_back) if isinstance(days_back, str) else (days_back or 7)
+            oldest_date = datetime.now() - timedelta(days=days)
+            oldest = oldest_date.strftime("%Y-%m-%d")
+            newest = datetime.now().strftime("%Y-%m-%d")
 
         async with ICUClient(config) as client:
             wellness_records = await client.get_wellness(

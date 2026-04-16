@@ -11,8 +11,8 @@ from ..response_builder import ResponseBuilder
 
 
 async def get_recent_activities(
-    limit: Annotated[int, "Number of activities to fetch"] = 30,
-    days_back: Annotated[int, "Number of days to look back"] = 30,
+    limit: Annotated[int | str, "Number of activities to fetch"] = 30,
+    days_back: Annotated[int | str, "Number of days to look back"] = 30,
     ctx: Context | None = None,
 ) -> str:
     """Get recent activities for the authenticated athlete.
@@ -31,14 +31,18 @@ async def get_recent_activities(
     config: ICUConfig = ctx.get_state("config")
 
     try:
+        # Coerce string inputs to int
+        limit_int = int(limit) if isinstance(limit, str) else limit
+        days_back_int = int(days_back) if isinstance(days_back, str) else days_back
+
         # Calculate date range
-        oldest_date = datetime.now() - timedelta(days=days_back)
+        oldest_date = datetime.now() - timedelta(days=days_back_int)
         oldest = oldest_date.strftime("%Y-%m-%d")
 
         async with ICUClient(config) as client:
             activities = await client.get_activities(
                 oldest=oldest,
-                limit=min(limit, 100),  # Cap at 100
+                limit=min(limit_int, 100),  # Cap at 100
             )
 
             if not activities:
