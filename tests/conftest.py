@@ -66,6 +66,42 @@ def mock_activity_data():
         "average_heartrate": 145,
         "icu_training_load": 120,
         "icu_intensity": 0.84,
+        "has_weather": True,
+        "average_weather_temp": 18.5,
+        "min_weather_temp": 12.0,
+        "max_weather_temp": 24.0,
+        "average_feels_like": 17.0,
+        "min_feels_like": 10.0,
+        "max_feels_like": 22.0,
+        "average_wind_speed": 15.0,
+        "average_wind_gust": 25.0,
+        "prevailing_wind_deg": 180,
+        "headwind_percent": 30.0,
+        "tailwind_percent": 70.0,
+        "average_clouds": 50,
+        "max_rain": 0.0,
+        "max_snow": 0.0,
+    }
+
+
+@pytest.fixture
+def mock_activity_data_no_weather():
+    """Sample activity data without weather fields."""
+    return {
+        "id": "12345",
+        "start_date_local": "2025-10-13T08:00:00",
+        "name": "Morning Ride",
+        "type": "Ride",
+        "distance": 50000.0,
+        "moving_time": 7200,
+        "elapsed_time": 7500,
+        "total_elevation_gain": 500.0,
+        "average_speed": 6.94,
+        "average_watts": 200,
+        "normalized_power": 210,
+        "average_heartrate": 145,
+        "icu_training_load": 120,
+        "icu_intensity": 0.84,
     }
 
 

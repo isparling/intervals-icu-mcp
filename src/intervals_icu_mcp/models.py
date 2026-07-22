@@ -103,6 +103,26 @@ class Activity(ActivitySummary):
     indoor: bool | None = None
     analyzed: str | None = None
 
+    # Weather fields
+    has_weather: bool | None = None
+    average_temp: float | None = None
+    min_temp: int | None = None
+    max_temp: int | None = None
+    average_weather_temp: float | None = None
+    min_weather_temp: float | None = None
+    max_weather_temp: float | None = None
+    average_feels_like: float | None = None
+    min_feels_like: float | None = None
+    max_feels_like: float | None = None
+    average_wind_speed: float | None = None
+    average_wind_gust: float | None = None
+    prevailing_wind_deg: int | None = None
+    headwind_percent: float | None = None
+    tailwind_percent: float | None = None
+    average_clouds: int | None = None
+    max_rain: float | None = None
+    max_snow: float | None = None
+
 
 class ActivitySearchResult(BaseModel):
     """Search result for activities."""

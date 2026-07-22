@@ -220,6 +220,82 @@ async def get_activity_details(
             if other_info:
                 activity_data["other"] = other_info
 
+            # Weather
+            if activity.has_weather is not None or any(
+                getattr(activity, f, None) is not None
+                for f in (
+                    "average_weather_temp",
+                    "min_weather_temp",
+                    "max_weather_temp",
+                    "average_feels_like",
+                    "min_feels_like",
+                    "max_feels_like",
+                    "average_wind_speed",
+                    "average_wind_gust",
+                    "prevailing_wind_deg",
+                    "headwind_percent",
+                    "tailwind_percent",
+                    "average_clouds",
+                    "max_rain",
+                    "max_snow",
+                    "average_temp",
+                    "min_temp",
+                    "max_temp",
+                )
+            ):
+                weather: dict[str, Any] = {}
+                if activity.has_weather is not None:
+                    weather["available"] = activity.has_weather
+
+                temperature: dict[str, Any] = {}
+                if activity.average_weather_temp is not None:
+                    temperature["average_weather_temp"] = activity.average_weather_temp
+                if activity.min_weather_temp is not None:
+                    temperature["min_weather_temp"] = activity.min_weather_temp
+                if activity.max_weather_temp is not None:
+                    temperature["max_weather_temp"] = activity.max_weather_temp
+                if activity.average_feels_like is not None:
+                    temperature["average_feels_like"] = activity.average_feels_like
+                if activity.min_feels_like is not None:
+                    temperature["min_feels_like"] = activity.min_feels_like
+                if activity.max_feels_like is not None:
+                    temperature["max_feels_like"] = activity.max_feels_like
+                if activity.average_temp is not None:
+                    temperature["average_device_temp"] = activity.average_temp
+                if activity.min_temp is not None:
+                    temperature["min_device_temp"] = activity.min_temp
+                if activity.max_temp is not None:
+                    temperature["max_device_temp"] = activity.max_temp
+                if temperature:
+                    weather["temperature"] = temperature
+
+                wind: dict[str, Any] = {}
+                if activity.average_wind_speed is not None:
+                    wind["average_speed_kmh"] = activity.average_wind_speed
+                if activity.average_wind_gust is not None:
+                    wind["average_gust_kmh"] = activity.average_wind_gust
+                if activity.prevailing_wind_deg is not None:
+                    wind["prevailing_direction_deg"] = activity.prevailing_wind_deg
+                if activity.headwind_percent is not None:
+                    wind["headwind_percent"] = activity.headwind_percent
+                if activity.tailwind_percent is not None:
+                    wind["tailwind_percent"] = activity.tailwind_percent
+                if wind:
+                    weather["wind"] = wind
+
+                conditions: dict[str, Any] = {}
+                if activity.average_clouds is not None:
+                    conditions["average_clouds_percent"] = activity.average_clouds
+                if activity.max_rain is not None:
+                    conditions["max_rain"] = activity.max_rain
+                if activity.max_snow is not None:
+                    conditions["max_snow"] = activity.max_snow
+                if conditions:
+                    weather["conditions"] = conditions
+
+                if weather:
+                    activity_data["weather"] = weather
+
             return ResponseBuilder.build_response(
                 data=activity_data,
                 query_type="activity_details",
