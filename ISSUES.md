@@ -6,13 +6,6 @@ Informal local tracking for pick-up-later work. Not GitHub issues (yet).
 
 ## Open
 
-### 2. Expose Normalized Power + moving time in get_activity_details
-**Priority:** low · **Source:** claw-coach race-analysis (24 Hours in the Enchanted Forest)
-
-`get_activity_details` returns training_load / IF / trimp but not Normalized Power or a clean moving-time figure, so NP had to be recomputed via stream fetches for the sim comparison.
-
-- Add `np` (icu normalized power) and `moving_time`/`elapsed_time` to the details payload if Intervals provides them.
-
 ### 3. Dedicated weather summary tool
 **Priority:** low · **Source:** follow-up from issue #1
 
@@ -29,3 +22,8 @@ The `GET /activity/{id}/weather-summary` endpoint returns richer weather data th
 **Priority:** medium · **Source:** claw-coach race-analysis (24 Hours in the Enchanted Forest)
 
 Added 17 weather fields to the `Activity` model and a structured `"weather"` section to `get_activity_details` output (temperature, wind, conditions). See `models.py`, `tools/activities.py`.
+
+### 2. Expose Normalized Power + moving time in get_activity_details ✓
+**Priority:** low · **Source:** claw-coach race-analysis (24 Hours in the Enchanted Forest)
+
+Already implemented: `normalized_power` in `power.normalized`, `moving_time` in `moving_time_seconds`, `elapsed_time` in `elapsed_time_seconds`. All fields modeled in `ActivitySummary` and exposed in tool output.
